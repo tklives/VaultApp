@@ -191,6 +191,8 @@ export default function MeetDetailPage() {
         );
 
         await updateDoc(attemptRef, { [field]: value });
+
+        fetchAssignedVaulters();
     }
 
     async function removeVaulter(assignedId: string) {
@@ -254,8 +256,8 @@ export default function MeetDetailPage() {
                                         <table className="w-full text-sm border mt-2">
                                             <thead>
                                                 <tr className="bg-gray-200">
-                                                    <th className="p-2 border">Height</th>
                                                     <th className="p-2 border">Result</th>
+                                                    <th className="p-2 border">Height</th>
                                                     <th className="p-2 border">Start</th>
                                                     <th className="p-2 border">Grip</th>
                                                     <th className="p-2 border">Takeoff</th>
@@ -266,8 +268,40 @@ export default function MeetDetailPage() {
                                             </thead>
                                             <tbody>
                                                 {vaulter.attempts.map((a) => (
-                                                    <tr key={a.id}>
-                                                        {['height', 'result', 'startMark', 'grip', 'takeoff', 'standards', 'comments'].map((field) => (
+                                                    <tr key={a.id}
+                                                        className={`transition-all ${a.result === 'make'
+                                                            ? 'bg-green-50'
+                                                            : a.result === 'miss'
+                                                                ? 'bg-red-50'
+                                                                : a.result === 'pass'
+                                                                    ? 'bg-gray-100'
+                                                                    : ''
+                                                            }`}>
+                                                        <td className="border p-1 text-center">
+                                                            <div className="flex justify-center gap-1">
+                                                                <button
+                                                                    onClick={() => handleUpdateAttempt(vaulter.id, a.id, 'result', 'make')}
+                                                                    className={`px-2 py-1 rounded text-xs font-semibold border ${a.result === 'make'
+                                                                            ? 'bg-green-200 border-green-500 text-green-800'
+                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    ✔
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleUpdateAttempt(vaulter.id, a.id, 'result', 'miss')}
+                                                                    className={`px-2 py-1 rounded text-xs font-semibold border ${a.result === 'miss'
+                                                                            ? 'bg-red-200 border-red-500 text-red-800'
+                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    ✖
+                                                                </button>
+                                                            </div>
+                                                        </td>
+
+
+                                                        {['height', 'startMark', 'grip', 'takeoff', 'standards', 'comments'].map((field) => (
                                                             <td key={field} className="border p-1">
                                                                 <input
                                                                     className="w-full p-1 text-sm border rounded"
@@ -276,6 +310,7 @@ export default function MeetDetailPage() {
                                                                 />
                                                             </td>
                                                         ))}
+
                                                         <td className="border text-center align-middle">
                                                             <button
                                                                 onClick={() => {
