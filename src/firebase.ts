@@ -3,12 +3,12 @@ import { initializeApp } from "firebase/app";
 import { persistentLocalCache, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBu704ys7A02ltinNP4VtAzxIlpIl0W31cc",
-  authDomain: "vaultmaster-486b2.firebaseapp.com",
-  projectId: "vaultmaster-486b2",
-  storageBucket: "vaultmaster-486b2.appspot.com",
-  messagingSenderId: "377129919962",
-  appId: "1:377129919962:web:1466b835f595e2132fcce3"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
