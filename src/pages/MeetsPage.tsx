@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  addDoc
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import MeetCard from '../components/MeetCard';
 import MeetForm from '../components/MeetForm';
@@ -24,23 +31,35 @@ export default function MeetsPage() {
 
   async function fetchMeets() {
     const snapshot = await getDocs(collection(db, 'meets'));
-    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Meet[];
+    const results = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Meet[];
     setMeets(results);
   }
 
   async function handleUpdate(id: string, updated: Partial<Meet>) {
     await updateDoc(doc(db, 'meets', id), updated);
-    setMeets((prev) => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    setMeets((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updated } : m))
+    );
     setToast('✅ Meet updated!');
     setModalOpen(false);
     setEditingMeet(null);
   }
 
+  async function handleCreate(data: Partial<Meet>) {
+    await addDoc(collection(db, 'meets'), data);
+    fetchMeets();
+    setToast('✅ Meet added!');
+    setModalOpen(false);
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this meet?')) return;
     await deleteDoc(doc(db, 'meets', id));
-    setMeets(prev => prev.filter(m => m.id !== id));
-    setToast('🗑️ Meet deleted');
+    setMeets((prev) => prev.filter((m) => m.id !== id));
+    setToast('🗑️ Meet deleted!');
   }
 
   return (
@@ -51,7 +70,18 @@ export default function MeetsPage() {
         </div>
       )}
 
-      <h1 className="text-2xl font-bold text-blue-700 mb-4">Track Meets</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-blue-700">Track Meets</h1>
+        <button
+          onClick={() => {
+            setEditingMeet(null);
+            setModalOpen(true);
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
+          ➕ Add Meet
+        </button>
+      </div>
 
       <div className="space-y-4">
         {meets.length === 0 ? (
@@ -71,21 +101,30 @@ export default function MeetsPage() {
         )}
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => {
-        setModalOpen(false);
-        setEditingMeet(null);
-      }}>
-        {editingMeet && (
+      {modalOpen && (
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingMeet(null);
+          }}
+        >
           <MeetForm
-            initialData={editingMeet}
+            initialData={editingMeet || undefined}
             onCancel={() => {
               setModalOpen(false);
               setEditingMeet(null);
             }}
-            onSave={(data) => handleUpdate(editingMeet.id, data)}
+            onSave={(data) => {
+              if (editingMeet) {
+                handleUpdate(editingMeet.id, data);
+              } else {
+                handleCreate(data);
+              }
+            }}
           />
-        )}
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 }
