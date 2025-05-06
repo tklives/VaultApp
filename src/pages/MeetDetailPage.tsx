@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { X, Trash } from 'lucide-react';
+import { Trash } from 'lucide-react';
+import DualField from '../components/DualField';
 import { db } from '../firebase';
 import {
     doc,
@@ -21,11 +22,27 @@ interface Meet {
 
 interface Attempt {
     id: string;
-    height: string;
     result: string;
-    grip: string;
-    takeoff: string;
-    startMark: string;
+    height: {
+        feet: number;
+        inches: number;
+        totalInches: number;
+    }
+    grip: {
+        feet: number;
+        inches: number;
+        totalInches: number;
+    }
+    takeoff: {
+        feet: number;
+        inches: number;
+        totalInches: number;
+    }
+    startMark: {
+        feet: number;
+        inches: number;
+        totalInches: number;
+    }
     standards: string;
     comments: string;
 }
@@ -134,6 +151,17 @@ export default function MeetDetailPage() {
     }
 
     async function addAttempt(assignedVaulterId: string) {
+        const vaulter = assignedVaulters.find((v) => v.id === assignedVaulterId);
+        const last = vaulter?.attempts?.[vaulter.attempts.length - 1];
+
+        function safeField(field: any): { feet: number; inches: number; totalInches: number } {
+            return field && typeof field.totalInches === 'number'
+                ? field
+                : { feet: 0, inches: 0, totalInches: 0 };
+        }
+
+        console.log('Last attempt:', last);
+
         await addDoc(
             collection(
                 db,
@@ -144,18 +172,20 @@ export default function MeetDetailPage() {
                 'attempts'
             ),
             {
-                height: '',
+                height: safeField(last?.height),
+                startMark: safeField(last?.startMark),
+                grip: safeField(last?.grip),
+                takeoff: safeField(last?.takeoff),
+                standards: typeof last?.standards === 'number' ? last.standards : '',
                 result: '',
-                grip: '',
-                takeoff: '',
-                startMark: '',
-                standards: '',
                 comments: '',
             }
         );
 
-        fetchAssignedVaulters(); // Refresh UI with new attempt
+        fetchAssignedVaulters();
     }
+
+
 
     async function deleteAttempt(assignedVaulterId: string, attemptId: string) {
         await deleteDoc(
@@ -178,7 +208,7 @@ export default function MeetDetailPage() {
         assignedVaulterId: string,
         attemptId: string,
         field: string,
-        value: string
+        value: string | { feet: number; inches: number; totalInches: number }
     ) {
         const attemptRef = doc(
             db,
@@ -190,7 +220,19 @@ export default function MeetDetailPage() {
             attemptId
         );
 
-        await updateDoc(attemptRef, { [field]: value });
+        // Handle object fields like height, grip, etc.
+        if (typeof value === 'object' && value.totalInches !== undefined) {
+            value = {
+                feet: Number(value.feet || 0),
+                inches: Number(value.inches || 0),
+                totalInches: Number(value.totalInches || 0),
+            };
+        }
+        if (typeof value === 'object') {
+            await updateDoc(attemptRef, { [field as keyof Attempt]: value });
+        } else {
+            await updateDoc(attemptRef, { [field as keyof Attempt]: value });
+        }
 
         fetchAssignedVaulters();
     }
@@ -199,6 +241,8 @@ export default function MeetDetailPage() {
         await deleteDoc(doc(db, 'meets', meetId!, 'assignedVaulters', assignedId));
         fetchAssignedVaulters();
     }
+
+    const dualFields: Array<keyof Attempt> = ['height', 'startMark', 'grip', 'takeoff'];
 
     return (
 
@@ -282,8 +326,8 @@ export default function MeetDetailPage() {
                                                                 <button
                                                                     onClick={() => handleUpdateAttempt(vaulter.id, a.id, 'result', 'make')}
                                                                     className={`px-2 py-1 rounded text-xs font-semibold border ${a.result === 'make'
-                                                                            ? 'bg-green-200 border-green-500 text-green-800'
-                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        ? 'bg-green-200 border-green-500 text-green-800'
+                                                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                                                         }`}
                                                                 >
                                                                     ✔
@@ -291,8 +335,8 @@ export default function MeetDetailPage() {
                                                                 <button
                                                                     onClick={() => handleUpdateAttempt(vaulter.id, a.id, 'result', 'miss')}
                                                                     className={`px-2 py-1 rounded text-xs font-semibold border ${a.result === 'miss'
-                                                                            ? 'bg-red-200 border-red-500 text-red-800'
-                                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        ? 'bg-red-200 border-red-500 text-red-800'
+                                                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                                                         }`}
                                                                 >
                                                                     ✖
@@ -301,15 +345,44 @@ export default function MeetDetailPage() {
                                                         </td>
 
 
-                                                        {['height', 'startMark', 'grip', 'takeoff', 'standards', 'comments'].map((field) => (
-                                                            <td key={field} className="border p-1">
-                                                                <input
-                                                                    className="w-full p-1 text-sm border rounded"
-                                                                    defaultValue={(a as any)[field]}
-                                                                    onBlur={(e) => handleUpdateAttempt(vaulter.id, a.id, field, e.target.value)}
+                                                        {dualFields.map((field) => (
+                                                            <td key={field} className="border p-1 text-center">
+                                                                <DualField
+                                                                    value={
+                                                                        (a[field] as { feet: number; inches: number }) ?? { feet: 0, inches: 0 }
+                                                                    }
+                                                                    onUpdate={(val) => handleUpdateAttempt(vaulter.id, a.id, field, val)}
                                                                 />
                                                             </td>
                                                         ))}
+
+
+                                                        <td className="border p-1 text-center w-20">
+                                                            <select
+                                                                className="w-full text-sm border rounded px-1 py-1"
+                                                                value={a.standards || ''}
+                                                                onChange={(e) =>
+                                                                    handleUpdateAttempt(vaulter.id, a.id, 'standards', e.target.value)
+                                                                }
+                                                            >
+                                                                <option value="">--</option>
+                                                                {Array.from({ length: 18 }, (_, i) => 15 + i).map((val) => (
+                                                                    <option key={val} value={val}>
+                                                                        {val}"
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+
+
+                                                        <td className="border p-1">
+                                                            <input
+                                                                type="text"
+                                                                value={a.comments}
+                                                                onChange={(e) => handleUpdateAttempt(vaulter.id, a.id, 'comments', e.target.value)}
+                                                                className="border rounded px-2 py-1 w-full"
+                                                            />
+                                                        </td>
 
                                                         <td className="border text-center align-middle">
                                                             <button

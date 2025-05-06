@@ -1,6 +1,6 @@
 // src/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { persistentLocalCache, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBu704ys7A02ltinNP4VtAzxIlpIl0W31cc",
@@ -12,4 +12,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(), // enables offline persistence
+});
+
+export { db };
