@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import MeetCard from '../components/MeetCard';
 import MeetForm from '../components/MeetForm';
